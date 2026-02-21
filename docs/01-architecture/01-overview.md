@@ -9,6 +9,8 @@ Frontend (Textarea + Tone selector)
         ↓
 POST /api/humanize
         ↓
+Rate limit check (demo mode only, per IP/day)
+        ↓
 Validate input (text, tone, length)
         ↓
 Load SKILL.md (cached in memory)
@@ -25,6 +27,7 @@ Stream tokens back to frontend
 ```text
 /app
   /api/humanize/route.ts   # API route — validation and orchestration
+  /api/status/route.ts     # Credit status endpoint (GET)
   page.tsx                 # Frontend UI
 /lib
   /llm
@@ -32,6 +35,7 @@ Stream tokens back to frontend
     openai.ts              # OpenAI implementation
     anthropic.ts           # Anthropic implementation
   skillLoader.ts           # SKILL.md fetcher and cache
+  rateLimit.ts             # Per-IP daily credit limiting (demo mode)
 /types
   llm.ts                   # LLMConfig and LLMProvider interfaces
 ```

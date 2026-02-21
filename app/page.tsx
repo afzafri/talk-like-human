@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, ArrowRight, Copy, CheckCircle2, AlertCircle, Info, RefreshCcw } from "lucide-react";
 
@@ -21,6 +21,14 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [credits, setCredits] = useState<{ demo: boolean; limit: number; remaining: number } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/status")
+      .then((r) => r.json())
+      .then((data) => setCredits(data))
+      .catch(() => {});
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -43,7 +51,15 @@ export default function Home() {
       if (!res.ok) {
         const data = await res.json();
         setError(data.error || "Something went wrong.");
+        if (res.status === 429) {
+          setCredits((prev) => prev ? { ...prev, remaining: 0 } : prev);
+        }
         return;
+      }
+
+      const remaining = res.headers.get("X-RateLimit-Remaining");
+      if (remaining !== null) {
+        setCredits((prev) => prev ? { ...prev, remaining: Number(remaining) } : prev);
       }
 
       if (!res.body) {
@@ -138,6 +154,11 @@ export default function Home() {
             </div>
             
             <div className="flex items-center gap-4 text-sm w-full sm:w-auto justify-between sm:justify-end">
+              {credits?.demo && (
+                <span className={`font-medium tabular-nums ${credits.remaining === 0 ? "text-red-500" : "text-gray-500"}`}>
+                  {credits.remaining} / {credits.limit} credits left
+                </span>
+              )}
               <span className={`font-medium ${isOverLimit ? 'text-red-500' : 'text-gray-500'}`}>
                 {charCount.toLocaleString()} / {MAX_LENGTH.toLocaleString()}
               </span>

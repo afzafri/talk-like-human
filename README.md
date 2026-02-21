@@ -44,7 +44,17 @@ ANTHROPIC_API_KEY=your_key_here
 
 SKILL_SOURCE=https://raw.githubusercontent.com/blader/humanizer/refs/heads/main/SKILL.md
 SKILL_CACHE_TTL=600
+
+# Demo mode — enforces a per-IP daily credit limit
+DEMO=false
+DEMO_CREDITS_PER_DAY=5
+
+# Required when DEMO=true (Upstash Redis)
+UPSTASH_REDIS_REST_URL=your_upstash_url_here
+UPSTASH_REDIS_REST_TOKEN=your_upstash_token_here
 ```
+
+Set `DEMO=false` locally to skip rate limiting. Set `DEMO=true` on your deployment with Upstash credentials to enforce the credit limit.
 
 ## Documentation
 

@@ -62,7 +62,41 @@ Errors are returned as JSON before streaming begins (during validation or provid
 | ----- | ----------------------------------------------------------- |
 | `200` | Success — response body is a text stream                    |
 | `400` | Invalid input (empty text, text too long, bad request body) |
+| `429` | Daily credit limit reached (demo mode only)                 |
 | `500` | LLM provider error or skill loading failure                 |
+
+## Rate Limiting
+
+When `DEMO=true`, each IP is limited to `DEMO_CREDITS_PER_DAY` requests per day.
+The limit resets at midnight UTC. Powered by [Upstash Redis](https://upstash.com).
+
+Remaining credits are returned in the response header:
+
+```text
+X-RateLimit-Remaining: 3
+```
+
+When credits are exhausted, the API returns a `429` with:
+
+```json
+{
+  "error": "You've used all your credits for today. Come back tomorrow."
+}
+```
+
+A separate endpoint is available to check current credit status without consuming a credit:
+
+**`GET /api/status`**
+
+```json
+{
+  "demo": true,
+  "limit": 5,
+  "remaining": 3
+}
+```
+
+When `DEMO=false`, `demo` is `false` and `remaining` is `-1`.
 
 ## Validation Rules
 
