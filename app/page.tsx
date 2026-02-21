@@ -4,8 +4,17 @@ import { useState } from "react";
 
 const MAX_LENGTH = 3000;
 
+const TONES = [
+  { value: "casual", label: "Casual" },
+  { value: "professional", label: "Professional" },
+  { value: "academic", label: "Academic" },
+  { value: "confident", label: "Confident" },
+  { value: "friendly", label: "Friendly" },
+];
+
 export default function Home() {
   const [input, setInput] = useState("");
+  const [tone, setTone] = useState("casual");
   const [result, setResult] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -24,7 +33,7 @@ export default function Home() {
       const res = await fetch("/api/humanize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text, tone }),
       });
 
       const data = await res.json();
@@ -72,6 +81,35 @@ export default function Home() {
               lineHeight: 1.6,
             }}
           />
+        </div>
+
+        <div style={{ marginBottom: 12 }}>
+          <label
+            htmlFor="tone"
+            style={{ fontSize: 13, color: "#555", marginRight: 8 }}
+          >
+            Tone:
+          </label>
+          <select
+            id="tone"
+            value={tone}
+            onChange={(e) => setTone(e.target.value)}
+            style={{
+              padding: "6px 10px",
+              fontSize: 14,
+              border: "1px solid #ddd",
+              borderRadius: 6,
+              outline: "none",
+              fontFamily: "inherit",
+              cursor: "pointer",
+            }}
+          >
+            {TONES.map((t) => (
+              <option key={t.value} value={t.value}>
+                {t.label}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div
