@@ -52,6 +52,9 @@ DEMO_CREDITS_PER_DAY=5
 # Required when DEMO=true (Upstash Redis)
 UPSTASH_REDIS_REST_URL=your_upstash_url_here
 UPSTASH_REDIS_REST_TOKEN=your_upstash_token_here
+
+# Used for SEO and Meta tags
+NEXT_PUBLIC_APP_URL=https://humanize.afifzafri.com
 ```
 
 Set `DEMO=false` locally to skip rate limiting. Set `DEMO=true` on your deployment with Upstash credentials to enforce the credit limit.

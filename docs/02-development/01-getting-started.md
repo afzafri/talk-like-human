@@ -33,6 +33,8 @@ OPENAI_API_KEY=your_key_here
 
 SKILL_SOURCE=https://raw.githubusercontent.com/blader/humanizer/refs/heads/main/SKILL.md
 SKILL_CACHE_TTL=600
+
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
 ### 3. Start the dev server
