@@ -46,6 +46,14 @@ SKILL_SOURCE=https://raw.githubusercontent.com/blader/humanizer/refs/heads/main/
 SKILL_CACHE_TTL=600
 ```
 
+## Documentation
+
+Full documentation is available in [`/docs`](docs/README.md).
+
+- [Architecture](docs/01-architecture/README.md)
+- [Getting Started](docs/02-development/01-getting-started.md)
+- [API Reference](docs/03-api/01-humanize-endpoint.md)
+
 ## License
 
 This project is licensed under the ```MIT license``` - see the ```LICENSE``` file for details.
