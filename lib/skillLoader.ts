@@ -36,7 +36,7 @@ export async function loadSkill(): Promise<string> {
 
 export function buildSystemPrompt(skillContent: string): string {
   return `ROLE:
-You are TalkLikeHuman, an advanced AI humanizer.
+You are Talk Like Human, an advanced AI humanizer.
 
 GOAL:
 Rewrite text to sound natural, fluid, and genuinely human.
