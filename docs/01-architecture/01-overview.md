@@ -17,7 +17,7 @@ Build system prompt
         ↓
 Provider Factory → OpenAI OR Anthropic
         ↓
-Return { result }
+Stream tokens back to frontend
 ```
 
 ## Folder Structure

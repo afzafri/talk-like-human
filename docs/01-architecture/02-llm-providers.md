@@ -14,8 +14,12 @@ export interface LLMConfig {
 
 export interface LLMProvider {
   generate(systemPrompt: string, userInput: string): Promise<string>;
+  generateStream(systemPrompt: string, userInput: string): Promise<ReadableStream<Uint8Array>>;
 }
 ```
+
+Both methods are required on every provider. `generate()` is kept for non-streaming use cases.
+`generateStream()` returns a `ReadableStream` that pipes tokens as they arrive from the LLM.
 
 ## Provider Factory
 

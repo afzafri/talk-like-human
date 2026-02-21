@@ -26,13 +26,29 @@ Accepts a block of text and an optional tone, returns the humanized version.
 
 ### Success
 
-```json
-{
-  "result": "The way we built this actually borrows from some pretty modern approaches..."
+On success, the response is a plain text stream (`Content-Type: text/plain`).
+Tokens are sent as they are generated — the client reads them progressively using the Streams API.
+
+```text
+The way we built this actually borrows from some pretty...
+```
+
+The frontend reads this with a `ReadableStream` reader:
+
+```typescript
+const reader = res.body.getReader();
+const decoder = new TextDecoder();
+
+while (true) {
+  const { done, value } = await reader.read();
+  if (done) break;
+  setResult((prev) => prev + decoder.decode(value, { stream: true }));
 }
 ```
 
 ### Error
+
+Errors are returned as JSON before streaming begins (during validation or provider failure):
 
 ```json
 {
@@ -44,7 +60,7 @@ Accepts a block of text and an optional tone, returns the humanized version.
 
 | Code  | Meaning                                                     |
 | ----- | ----------------------------------------------------------- |
-| `200` | Success                                                     |
+| `200` | Success — response body is a text stream                    |
 | `400` | Invalid input (empty text, text too long, bad request body) |
 | `500` | LLM provider error or skill loading failure                 |
 

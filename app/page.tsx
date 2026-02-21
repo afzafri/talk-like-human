@@ -40,12 +40,24 @@ export default function Home() {
         body: JSON.stringify({ text, tone }),
       });
 
-      const data = await res.json();
-
       if (!res.ok) {
+        const data = await res.json();
         setError(data.error || "Something went wrong.");
-      } else {
-        setResult(data.result);
+        return;
+      }
+
+      if (!res.body) {
+        setError("No response received.");
+        return;
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        setResult((prev) => prev + decoder.decode(value, { stream: true }));
       }
     } catch {
       setError("Network error. Please try again.");
@@ -182,7 +194,7 @@ export default function Home() {
 
               <div className="flex-grow relative">
                 <AnimatePresence mode="wait">
-                  {loading ? (
+                  {loading && !result ? (
                     <motion.div
                       key="loading"
                       initial={{ opacity: 0 }}

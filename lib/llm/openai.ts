@@ -27,4 +27,27 @@ export class OpenAIProvider implements LLMProvider {
 
     return content;
   }
+
+  async generateStream(systemPrompt: string, userInput: string): Promise<ReadableStream<Uint8Array>> {
+    const stream = await this.client.chat.completions.create({
+      model: this.config.model,
+      temperature: this.config.temperature,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userInput },
+      ],
+      stream: true,
+    });
+
+    const encoder = new TextEncoder();
+    return new ReadableStream({
+      async start(controller) {
+        for await (const chunk of stream) {
+          const text = chunk.choices[0]?.delta?.content ?? "";
+          if (text) controller.enqueue(encoder.encode(text));
+        }
+        controller.close();
+      },
+    });
+  }
 }

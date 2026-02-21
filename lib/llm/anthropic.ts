@@ -28,4 +28,27 @@ export class AnthropicProvider implements LLMProvider {
 
     return block.text;
   }
+
+  async generateStream(systemPrompt: string, userInput: string): Promise<ReadableStream<Uint8Array>> {
+    const stream = await this.client.messages.create({
+      model: this.config.model,
+      max_tokens: 4096,
+      temperature: this.config.temperature,
+      system: systemPrompt,
+      messages: [{ role: "user", content: userInput }],
+      stream: true,
+    });
+
+    const encoder = new TextEncoder();
+    return new ReadableStream({
+      async start(controller) {
+        for await (const event of stream) {
+          if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+            controller.enqueue(encoder.encode(event.delta.text));
+          }
+        }
+        controller.close();
+      },
+    });
+  }
 }
