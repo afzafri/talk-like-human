@@ -1,8 +1,29 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, ArrowRight, Copy, CheckCircle2, AlertCircle, Info, RefreshCcw, ShieldCheck, Feather, SpellCheck } from "lucide-react";
+
+// ── Turnstile types ────────────────────────────────────────────────────────────
+interface TurnstileInstance {
+  render: (
+    el: HTMLElement,
+    opts: {
+      sitekey: string;
+      size?: "normal" | "compact" | "invisible";
+      callback?: (token: string) => void;
+      "expired-callback"?: () => void;
+      "error-callback"?: () => void;
+    }
+  ) => string;
+  reset: (widgetId: string) => void;
+}
+
+declare global {
+  interface Window {
+    turnstile?: TurnstileInstance;
+  }
+}
 
 const MAX_LENGTH = 3000;
 
@@ -23,12 +44,85 @@ export default function Home() {
   const [copied, setCopied] = useState(false);
   const [credits, setCredits] = useState<{ demo: boolean; limit: number; remaining: number } | null>(null);
 
+  // ── Session / Turnstile state ──────────────────────────────────────────────
+  const widgetIdRef = useRef<string | null>(null);
+  const sessionOkRef = useRef(false);
+  // Queue of resolvers waiting for a fresh session token
+  const sessionResolversRef = useRef<Array<(ok: boolean) => void>>([]);
+
+  function resolveSessionWaiters(ok: boolean) {
+    sessionOkRef.current = ok;
+    const resolvers = sessionResolversRef.current;
+    sessionResolversRef.current = [];
+    resolvers.forEach((r) => r(ok));
+  }
+
+  async function onTurnstileToken(token: string) {
+    try {
+      const res = await fetch("/api/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ captcha_token: token }),
+      });
+      resolveSessionWaiters(res.ok);
+    } catch {
+      resolveSessionWaiters(false);
+    }
+  }
+
+  function onTurnstileExpired() {
+    sessionOkRef.current = false;
+    // Widget auto-resets and will fire callback again with a new token
+    if (widgetIdRef.current) window.turnstile?.reset(widgetIdRef.current);
+  }
+
+  function onTurnstileError() {
+    resolveSessionWaiters(false);
+  }
+
   useEffect(() => {
     fetch("/api/status")
       .then((r) => r.json())
       .then((data) => setCredits(data))
       .catch(() => {});
   }, []);
+
+  // Initialise Turnstile invisible widget on mount
+  useEffect(() => {
+    async function init() {
+      // Wait for the Turnstile script to load (loaded async in layout.tsx)
+      let attempts = 0;
+      while (!window.turnstile && attempts++ < 60) {
+        await new Promise((r) => setTimeout(r, 100));
+      }
+      const container = document.getElementById("cf-turnstile");
+      if (!container || !window.turnstile) return;
+
+      widgetIdRef.current = window.turnstile.render(container, {
+        sitekey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!,
+        size: "invisible",
+        callback: onTurnstileToken,
+        "expired-callback": onTurnstileExpired,
+        "error-callback": onTurnstileError,
+      });
+    }
+    init();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /**
+   * Returns a Promise that resolves true once a valid session cookie is set.
+   * If the session is already valid, resolves immediately.
+   * If not, queues a resolver and resets the Turnstile widget to get a fresh token.
+   */
+  function ensureSession(): Promise<boolean> {
+    if (sessionOkRef.current) return Promise.resolve(true);
+    return new Promise((resolve) => {
+      sessionResolversRef.current.push(resolve);
+      // Trigger Turnstile to re-run challenge and get a new token
+      if (widgetIdRef.current) window.turnstile?.reset(widgetIdRef.current);
+    });
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -41,12 +135,31 @@ export default function Home() {
     setResult("");
     setCopied(false);
 
+    // Ensure we have a valid session cookie before calling the API
+    const ready = await ensureSession();
+    if (!ready) {
+      setError("Security verification failed. Please refresh the page and try again.");
+      setLoading(false);
+      return;
+    }
+
     try {
       const res = await fetch("/api/humanize", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "X-Requested-With": "XMLHttpRequest",
+        },
         body: JSON.stringify({ text, tone }),
       });
+
+      if (res.status === 401) {
+        // Session expired mid-session — mark invalid so next submit renews it
+        sessionOkRef.current = false;
+        if (widgetIdRef.current) window.turnstile?.reset(widgetIdRef.current);
+        setError("Session expired. Please try again.");
+        return;
+      }
 
       if (!res.ok) {
         const data = await res.json();
@@ -112,10 +225,10 @@ export default function Home() {
           </div>
           <span className="font-semibold text-gray-900 tracking-tight text-lg">Talk Like Human</span>
         </div>
-        <a 
-          href="https://github.com/afzafri/talk-like-human" 
-          target="_blank" 
-          rel="noopener noreferrer" 
+        <a
+          href="https://github.com/afzafri/talk-like-human"
+          target="_blank"
+          rel="noopener noreferrer"
           className="text-gray-400 hover:text-gray-900 transition-colors"
           title="View on GitHub"
         >
@@ -132,7 +245,7 @@ export default function Home() {
             Humanize your AI text.
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
-            Instantly transform robotic AI text into natural, engaging content. 
+            Instantly transform robotic AI text into natural, engaging content.
             Bypass AI detectors, improve readability, and connect genuinely with your audience.
           </p>
         </div>
@@ -165,13 +278,13 @@ export default function Home() {
                 </div>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-4 text-sm w-full sm:w-auto justify-between sm:justify-end">
               {credits?.demo && (
                 <div className="relative group">
                   <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border shadow-sm font-medium cursor-help transition-colors
-                    ${credits.remaining === 0 
-                      ? "bg-red-50 border-red-200 text-red-700" 
+                    ${credits.remaining === 0
+                      ? "bg-red-50 border-red-200 text-red-700"
                       : credits.remaining <= 2
                         ? "bg-orange-50 border-orange-200 text-orange-700"
                         : "bg-green-50 border-green-200 text-green-700"
@@ -283,7 +396,7 @@ export default function Home() {
                       </div>
                       <p className="text-gray-600 font-medium mb-1">Ready to humanize</p>
                       <p className="text-sm text-gray-400 mb-6">Your natural-sounding text will appear here</p>
-                      <button 
+                      <button
                         onClick={handleSample}
                         className="text-sm text-blue-600 hover:text-blue-700 font-medium hover:underline flex items-center gap-1"
                       >
@@ -346,7 +459,7 @@ export default function Home() {
                Evade AI detection tools by stripping away predictable algorithmic patterns and robotic sentence structures.
              </p>
            </div>
-           
+
            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
              <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center text-purple-600 mb-4">
                <Feather className="w-5 h-5" />
@@ -402,6 +515,9 @@ export default function Home() {
           <p>Talk Like Human &copy; {new Date().getFullYear()}. Clean up your AI text.</p>
         </div>
       </footer>
+
+      {/* Invisible Turnstile widget container — renders no visible UI */}
+      <div id="cf-turnstile" style={{ display: "none" }} />
     </div>
   );
 }

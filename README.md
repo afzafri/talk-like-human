@@ -29,6 +29,7 @@ Two key areas it targets:
 - TypeScript
 - Tailwind CSS
 - OpenAI API / Anthropic API
+- Cloudflare Turnstile — invisible captcha for API protection
 
 ## Environment Variables
 
@@ -55,6 +56,15 @@ UPSTASH_REDIS_REST_TOKEN=your_upstash_token_here
 
 # Used for SEO and Meta tags
 NEXT_PUBLIC_APP_URL=https://humanize.afifzafri.com
+
+# API protection — Cloudflare Turnstile
+# Get keys at https://dash.cloudflare.com/?to=/:account/turnstile
+# For local dev, use test keys: NEXT_PUBLIC_TURNSTILE_SITE_KEY=1x00000000000000000000AA
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=your_site_key_here
+TURNSTILE_SECRET_KEY=your_secret_key_here
+
+# Session signing secret — generate with: openssl rand -base64 32
+SESSION_SECRET=your_random_secret_here
 ```
 
 Set `DEMO=false` locally to skip rate limiting. Set `DEMO=true` on your deployment with Upstash credentials to enforce the credit limit.

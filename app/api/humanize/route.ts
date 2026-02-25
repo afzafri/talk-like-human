@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { createProvider } from "@/lib/llm";
 import { loadSkill, buildSystemPrompt } from "@/lib/skillLoader";
 import { checkRateLimit } from "@/lib/rateLimit";
+import { verifySession, SESSION_COOKIE } from "@/lib/session";
 
 const MAX_INPUT_LENGTH = 3000;
 
@@ -14,6 +16,22 @@ const TONE_INSTRUCTIONS: Record<string, string> = {
 };
 
 export async function POST(req: NextRequest) {
+  // CSRF check — browsers won't send this header cross-origin
+  const requestedWith = req.headers.get("x-requested-with");
+  if (!requestedWith || requestedWith.toLowerCase() !== "xmlhttprequest") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  // Session check — must have a valid HttpOnly session cookie from /api/session
+  const cookieStore = await cookies();
+  const sessionToken = cookieStore.get(SESSION_COOKIE)?.value;
+  if (!sessionToken || !verifySession(sessionToken)) {
+    return NextResponse.json(
+      { error: "Session expired. Please refresh the page." },
+      { status: 401 }
+    );
+  }
+
   // Rate limiting — only enforced when DEMO=true
   const ip =
     req.headers.get("cf-connecting-ip") ??

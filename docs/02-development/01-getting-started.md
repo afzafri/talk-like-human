@@ -35,7 +35,16 @@ SKILL_SOURCE=https://raw.githubusercontent.com/blader/humanizer/refs/heads/main/
 SKILL_CACHE_TTL=600
 
 NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# API protection — use test keys for local dev (always pass, no Cloudflare account needed)
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=1x00000000000000000000AA
+TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA
+
+# Session signing — generate with: openssl rand -base64 32
+SESSION_SECRET=your_random_secret_here
 ```
+
+> **Turnstile test keys** — the values above are Cloudflare's official local test keys. They always pass silently and require no real Cloudflare account. Replace with real keys from the [Turnstile dashboard](https://dash.cloudflare.com/?to=/:account/turnstile) before deploying.
 
 ### 3. Start the dev server
 

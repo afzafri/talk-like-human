@@ -13,6 +13,19 @@ Accepts a block of text and an optional tone, returns the humanized version.
 }
 ```
 
+### Required Headers
+
+| Header | Value |
+| ------ | ----- |
+| `Content-Type` | `application/json` |
+| `X-Requested-With` | `XMLHttpRequest` |
+
+The `X-Requested-With` header is a CSRF guard. Requests without it are rejected with `403`.
+
+A valid `tlh_session` HttpOnly cookie must also be present. It is set automatically by `/api/session` on page load — browsers send it with same-origin requests without any extra code.
+
+### Body Fields
+
 | Field  | Type   | Required | Description                                           |
 | ------ | ------ | -------- | ----------------------------------------------------- |
 | `text` | string | Yes      | The text to humanize. Max 3000 characters.            |
@@ -62,6 +75,8 @@ Errors are returned as JSON before streaming begins (during validation or provid
 | ----- | ----------------------------------------------------------- |
 | `200` | Success — response body is a text stream                    |
 | `400` | Invalid input (empty text, text too long, bad request body) |
+| `401` | Session cookie missing or expired — refresh the page        |
+| `403` | Missing `X-Requested-With` header                           |
 | `429` | Daily credit limit reached (demo mode only)                 |
 | `500` | LLM provider error or skill loading failure                 |
 
@@ -105,6 +120,18 @@ When `DEMO=false`, `demo` is `false` and `remaining` is `-1`.
 - Invalid `tone` values are silently ignored (no tone instruction is applied)
 
 ## Security
+
+### API protection
+
+The endpoint is protected by a two-layer guard:
+
+1. **Session cookie** (`tlh_session`) — an HttpOnly, SameSite=Strict cookie signed with HMAC-SHA256. Issued by `/api/session` after the frontend completes a Cloudflare Turnstile challenge. Expires after 10 minutes. Without it, the request gets a `401`.
+
+2. **CSRF header** — `X-Requested-With: XMLHttpRequest` must be present. Browsers do not send this header on cross-origin requests, so it blocks drive-by API calls from other sites. Without it, the request gets a `403`.
+
+Together these mean: to call this API you must have loaded the actual page, passed a silent captcha, and be making the request from the same origin.
+
+### Prompt injection
 
 User input is never concatenated directly into the prompt. It is wrapped in `<content>` tags and
 sandwiched between task instructions in the user message, so the model always sees the rewrite
