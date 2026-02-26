@@ -10,7 +10,6 @@ interface TurnstileInstance {
     el: HTMLElement,
     opts: {
       sitekey: string;
-      size?: "normal" | "compact" | "invisible";
       callback?: (token: string) => void;
       "expired-callback"?: () => void;
       "error-callback"?: () => void;
@@ -100,7 +99,6 @@ export default function Home() {
 
       widgetIdRef.current = window.turnstile.render(container, {
         sitekey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!,
-        size: "invisible",
         callback: onTurnstileToken,
         "expired-callback": onTurnstileExpired,
         "error-callback": onTurnstileError,
