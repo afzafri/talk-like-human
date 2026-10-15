@@ -6,8 +6,9 @@ export function createProvider(): LLMProvider {
   const provider = process.env.LLM_PROVIDER;
   const model = process.env.LLM_MODEL!;
   const temperature = Number(process.env.LLM_TEMPERATURE ?? 0.8);
+  const reasoningEffort = process.env.LLM_REASONING_EFFORT || undefined;
 
-  const config = { model, temperature };
+  const config = { model, temperature, reasoningEffort };
 
   switch (provider) {
     case "openai":

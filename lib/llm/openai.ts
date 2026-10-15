@@ -16,6 +16,7 @@ export class OpenAIProvider implements LLMProvider {
     const response = await this.client.chat.completions.create({
       model: this.config.model,
       temperature: this.config.temperature,
+      reasoning_effort: this.config.reasoningEffort as OpenAI.ReasoningEffort,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userInput },
@@ -32,6 +33,7 @@ export class OpenAIProvider implements LLMProvider {
     const stream = await this.client.chat.completions.create({
       model: this.config.model,
       temperature: this.config.temperature,
+      reasoning_effort: this.config.reasoningEffort as OpenAI.ReasoningEffort,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userInput },

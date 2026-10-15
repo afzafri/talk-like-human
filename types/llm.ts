@@ -1,6 +1,7 @@
 export interface LLMConfig {
   model: string;
   temperature: number;
+  reasoningEffort?: string;
 }
 
 export interface LLMProvider {
